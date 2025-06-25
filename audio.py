@@ -18,7 +18,7 @@ client = OpenAI(
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 FRAGMENTS_DIR = "audio_fragments"
 os.makedirs(FRAGMENTS_DIR, exist_ok=True)
