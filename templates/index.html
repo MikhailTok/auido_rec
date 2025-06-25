@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <button id="startBtn" onclick="startRecording()">Начать запись</button>
+    <button id="stopBtn" onclick="stopRecording()" disabled>Остановить</button>
+
+    <h1>Сообщения от сервера:</h1>
+    <div id="messages"></div> <!-- Контейнер для сообщений -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+
+
+
+
+<script>
+
+
+let mediaRecorder;
+let audioChunks = [];
+const socket = io.connect();
+
+    // Обработчик входящих сообщений
+socket.addEventListener('message', (event) => {
+    const message = event['message']; // Получаем данные сообщения
+    displayMessage(message); // Отображаем сообщение
+});
+
+
+async function startRecording() {
+    audioChunks = [];
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("stopBtn").disabled = false;
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.onload = function() {
+                const arrayBuffer = this.result;
+                socket.emit('message', {data: arrayBuffer});
+            };
+            reader.readAsArrayBuffer(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start(1000); // Собираем чанки каждую секунду
+    } catch (error) {
+        console.error("Ошибка доступа к микрофону:", error);
+        resetButtons();
+    }
+}
+
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        resetButtons();
+    }
+}
+
+function resetButtons() {
+    document.getElementById("startBtn").disabled = false;
+    document.getElementById("stopBtn").disabled = true;
+}
+
+
+
+
+// Функция для отображения сообщения на странице
+function displayMessage(message) {
+    const messagesContainer = document.getElementById('messages');
+    
+    // Создаем элемент для сообщения
+    const messageElement = document.createElement('div');
+    messageElement.textContent = message;
+    messageElement.classList.add('message');
+    
+    // Добавляем в контейнер
+    messagesContainer.appendChild(messageElement);
+    
+    // Прокрутка к последнему сообщению
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+};
+</script>
+
+
+
+    
+</body>
+</html>
