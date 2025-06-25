@@ -23,7 +23,7 @@
 
 let mediaRecorder;
 let audioChunks = [];
-const socket = io.connect("{{ url_for('index')}}");
+const socket = io.connect();
 
     // Обработчик входящих сообщений
 socket.addEventListener('message', (event) => {
