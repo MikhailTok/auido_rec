@@ -17,7 +17,7 @@ client = OpenAI(
 )
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
 socketio = SocketIO(app)
 
 FRAGMENTS_DIR = "audio_fragments"
@@ -76,7 +76,8 @@ def handle_message(data):
 
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000)
+    port = 5000
+    socketio.run(app, host='0.0.0.0', port=port)
 
 
 
