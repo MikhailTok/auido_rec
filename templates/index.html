@@ -23,13 +23,29 @@
 
 let mediaRecorder;
 let audioChunks = [];
-const socket = io.connect('ws://localhost:5000');
+let mimeType_cur;
+const socket = io.connect();
 
     // Обработчик входящих сообщений
 socket.addEventListener('message', (event) => {
     const message = event['message']; // Получаем данные сообщения
     displayMessage(message); // Отображаем сообщение
 });
+
+function getSupportedMimeType() {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/mp4;codecs=aac',
+    'audio/mp4',
+    'audio/webm'
+  ];
+  
+  return types.find(type => MediaRecorder.isTypeSupported(type));
+}
+
+// Использование
+const mimeType = getSupportedMimeType() || 'audio/webm';
+displayMessage(mimeType);
 
 
 async function startRecording() {
@@ -39,7 +55,21 @@ async function startRecording() {
     
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
+
+        const options = { 
+            mimeType: 'audio/webm;codecs=opus' 
+        };
+
+
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mediaRecorder = new MediaRecorder(stream, options);
+            mimeType_cur = 'audio/webm;codecs=opus';}
+            
+
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
+            mimeType_cur = 'audio/mp4';
+        }
         
         mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) {
@@ -48,11 +78,11 @@ async function startRecording() {
         };
         
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioBlob = new Blob(audioChunks, { type: mimeType_cur });
             const reader = new FileReader();
             reader.onload = function() {
                 const arrayBuffer = this.result;
-                socket.emit('message', {data: arrayBuffer});
+                socket.emit('message', {data: arrayBuffer, mimeType: mimeType_cur});
             };
             reader.readAsArrayBuffer(audioBlob);
             stream.getTracks().forEach(track => track.stop());

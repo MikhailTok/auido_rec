@@ -45,9 +45,12 @@ def convert_webm_to_mp3(input_path: str, output_path: str):
 @socketio.on('message')
 def handle_message(data):
 
+    print("Кодек фронта", data['mimeType'])
+
     sid = request.sid
     # Генерируем уникальное имя для фрагмента
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    
     filename = f"{FRAGMENTS_DIR}/{sid}_{timestamp}.webm"
     converted_filename = f"{CONVERTED_DIR}/{sid}_{timestamp}.mp3"
 
@@ -58,17 +61,18 @@ def handle_message(data):
         print(f'Фрагмент сохранен: {filename}, размер: {len(data['data'])} байт')
 
 
-        convert_webm_to_mp3(filename, converted_filename)        
+        if data['mimeType'] == "audio/webm;codecs=opus":
+            convert_webm_to_mp3(filename, converted_filename)        
 
-        audio_file= open(converted_filename, "rb")
+        # audio_file= open(converted_filename, "rb")
 
-        transcription = client.audio.transcriptions.create(
-            model="whisper-1", 
-            file=audio_file
-        )
-        print(transcription.text)
+        # transcription = client.audio.transcriptions.create(
+        #     model="whisper-1", 
+        #     file=audio_file
+        # )
+        # print(transcription.text)
 
-        socketio.emit('message',  {"message": transcription.text})
+        socketio.emit('message',  {"message": 'transcription.text'})
 
     except Exception as e:
         print(f'Ошибка сохранения фрагмента: {str(e)}')
