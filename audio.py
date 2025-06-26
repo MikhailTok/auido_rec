@@ -2,7 +2,7 @@
 # apt update
 # apt install sudo
 
-# sudo apt install ffmpeg
+# 
 
 
 from flask import Flask, render_template, request
@@ -56,12 +56,9 @@ def handle_message(data):
         with open(filename, 'wb') as f:
             f.write(data['data'])
         print(f'Фрагмент сохранен: {filename}, размер: {len(data['data'])} байт')
-        # print(type(data['data']))
 
 
         convert_webm_to_mp3(filename, converted_filename)        
-        # Отправляем подтверждение клиенту
-        # socketio.emit('message', {'filename': filename}, to=sid)
 
         audio_file= open(converted_filename, "rb")
 
@@ -69,18 +66,12 @@ def handle_message(data):
             model="whisper-1", 
             file=audio_file
         )
-
         print(transcription.text)
 
         socketio.emit('message',  {"message": transcription.text})
 
     except Exception as e:
         print(f'Ошибка сохранения фрагмента: {str(e)}')
-        # socketio.emit('chunk_error', {'error': str(e)}, to=sid)
-
-
-    # socketio.emit('message',  {"message": "все ок"})
-
 
 
 if __name__ == '__main__':
